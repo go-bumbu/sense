@@ -199,7 +199,8 @@ type Completer struct {
 	nCtx     int // tokens the context holds, the prompt and the reply together
 	batch    int // most tokens one decode takes
 	maxNew   int
-	accel    string // what runs the model, for the load log line
+	name     string // the spec's Name, see Model
+	accel    string // what runs the model, see Accel
 	closed   bool   // set by Close and read by Complete, both under mu
 }
 
@@ -242,6 +243,7 @@ func openCompleter(api chatAPI, rt *runtimeLoader, libDir, modelPath string, spe
 		nCtx:     min(nCtxGot, int(nCtx)),
 		batch:    min(batchGot, int(batch)),
 		maxNew:   cmp.Or(spec.MaxNewTokens, defaultMaxNewTokens),
+		name:     spec.Name,
 		accel:    used,
 	}
 	// a context or a batch of no tokens would hold no prompt, and feed would
@@ -262,6 +264,14 @@ func (c *Completer) release() {
 	c.api.freeContext(c.ctx)
 	c.api.freeModel(c.model)
 }
+
+// Model names the chat model: the spec's Name, the name a
+// sense.LazyCompleter is configured with (see LookupCompleterSpec).
+func (c *Completer) Model() string { return c.name }
+
+// Accel says what runs the model, as the load log line does: "cpu" or the
+// GPU device.
+func (c *Completer) Accel() string { return c.accel }
 
 // Close frees the model and its llama.cpp context; a later Complete fails.
 // Closing twice is a no-op.

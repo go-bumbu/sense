@@ -197,12 +197,16 @@ func (s *Sampler) Fingerprint() string {
 
 // Sample implements media.Sampler: it probes the video's duration, decodes
 // it once and returns the frames taken, in time order, as *image.RGBA, each
-// with pixels of its own. A file no frame comes out of is an error. ctx
-// bounds both programs; cancelling it kills them.
+// with pixels of its own. A file no frame comes out of is an error, and one
+// with no video stream media.ErrNoVideo, before ffmpeg runs. ctx bounds both
+// programs; cancelling it kills them.
 func (s *Sampler) Sample(ctx context.Context, path string) ([]media.Frame, error) {
 	in, err := s.probe(ctx, path)
 	if err != nil {
 		return nil, err
+	}
+	if in.noVideo {
+		return nil, fmt.Errorf("ffprobe: %q: %w", path, media.ErrNoVideo)
 	}
 	images, log, err := s.decode(ctx, path, in)
 	if err != nil {
@@ -295,9 +299,13 @@ var _ media.Cutter = (*Sampler)(nil)
 // when neither does (a stream dump, a still image) or what they state is no
 // length a video has (not a number, beyond media.MaxDuration). The
 // container's length is that of its longest stream, so a file whose sound
-// runs on after the picture is as long as its picture here.
+// runs on after the picture is as long as its picture here. A file with no
+// video stream is media.ErrNoVideo.
 func (s *Sampler) Duration(ctx context.Context, path string) (time.Duration, error) {
 	in, err := s.probe(ctx, path)
+	if err == nil && in.noVideo {
+		return 0, fmt.Errorf("ffprobe: %q: %w", path, media.ErrNoVideo)
+	}
 	return in.duration, err
 }
 
@@ -462,6 +470,9 @@ type probed struct {
 	// image2 says that the image demuxer reads the file. It takes a "%d" in
 	// the name for the pattern of a numbered sequence unless told not to.
 	image2 bool
+	// noVideo says that ffprobe described the container and no video
+	// stream in it: an audio-only file.
+	noVideo bool
 }
 
 // literalName is the input option that makes the image demuxer read the
@@ -516,16 +527,19 @@ func (s *Sampler) probe(ctx context.Context, path string) (probed, error) {
 // parseProbe reads ffprobe's answer: key=value lines, those of the video
 // stream between [STREAM] and [/STREAM]. The duration is the stream's own,
 // else the stream's DURATION tag, else the container's (a duration outside
-// a stream section).
+// a stream section). A [FORMAT] section with no [STREAM] one is a file
+// without video.
 func parseProbe(out []byte) probed {
 	var in probed
 	var video, container time.Duration
-	inStream := false
+	inStream, sawStream, sawFormat := false, false, false
 	for line := range strings.Lines(string(out)) {
 		key, value, _ := strings.Cut(strings.TrimSpace(line), "=")
 		switch {
+		case key == "[FORMAT]":
+			sawFormat = true
 		case key == "[STREAM]":
-			inStream = true
+			inStream, sawStream = true, true
 		case key == "[/STREAM]":
 			inStream = false
 		case key == "format_name":
@@ -542,6 +556,9 @@ func parseProbe(out []byte) probed {
 	if video == 0 {
 		in.duration = container
 	}
+	// only the stream of -select_streams v:0 is listed, so a container
+	// section without one is a file without video
+	in.noVideo = sawFormat && !sawStream
 	return in
 }
 

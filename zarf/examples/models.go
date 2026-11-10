@@ -91,10 +91,7 @@ func newTextModel(cfg yzma.Config, logger *slog.Logger) (*textModel, error) {
 // page needs, so it loads on the first recommendation.
 type chatModel struct {
 	*sense.LazyCompleter
-	name string
-	// accel is what the model was asked to run on. A yzma.Completer does
-	// not say what it ended up on, as the embedders do.
-	accel string
+	runsOn runsOn
 }
 
 func newChatModel(cfg yzma.Config, logger *slog.Logger) (*chatModel, error) {
@@ -102,25 +99,19 @@ func newChatModel(cfg yzma.Config, logger *slog.Logger) (*chatModel, error) {
 	if err != nil {
 		return nil, fmt.Errorf("chat model: %w", err)
 	}
-	m := &chatModel{name: spec.Name, accel: accelName(cfg.Accel)}
-	m.LazyCompleter = sense.NewLazyCompleter(func(ctx context.Context) (sense.Completer, error) {
+	m := &chatModel{runsOn: runsOn{asked: string(cfg.Accel)}}
+	m.LazyCompleter = sense.NewLazyCompleter(spec.Name, func(ctx context.Context) (sense.Completer, error) {
 		start := time.Now()
 		logger.Info("loading the chat model", "model", spec.Name)
 		c, err := yzma.NewCompleter(ctx, cfg)
 		if err != nil {
 			return nil, err
 		}
+		m.runsOn.set(c.Accel())
 		logger.Info("chat model loaded", "model", spec.Name, "took", time.Since(start).Round(time.Millisecond))
 		return c, nil
 	})
 	return m, nil
-}
-
-func accelName(a yzma.Accel) string {
-	if a == "" {
-		return "auto"
-	}
-	return string(a)
 }
 
 // state is a lazy loader's state in words, with the error it keeps when it

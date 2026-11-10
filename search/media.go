@@ -1,7 +1,6 @@
 package search
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -14,25 +13,10 @@ import (
 	"strings"
 	"time"
 
-	// the image formats IndexImage and SearchImage decode; an application
-	// registers more with image.RegisterFormat
-	_ "image/gif"
-	_ "image/jpeg"
-	_ "image/png"
-
-	_ "golang.org/x/image/bmp"
-	_ "golang.org/x/image/tiff"
-	_ "golang.org/x/image/webp"
-
 	"github.com/go-bumbu/sense"
 	"github.com/go-bumbu/sense/media"
 	"github.com/go-bumbu/sense/vector"
 )
-
-// maxImagePixels is the largest picture IndexImage and SearchImage decode:
-// 256 megapixels, a gigabyte of RGBA, which is beyond any camera and well
-// short of what a crafted one-kilobyte PNG can claim to be.
-const maxImagePixels = 256 << 20
 
 // defaultMaxImageBytes is the most IndexImage and SearchImage read from
 // their reader unless WithMaxImageBytes says otherwise: 64 MiB, several
@@ -215,7 +199,7 @@ func (ix *MediaIndex) IndexImage(ctx context.Context, docID string, r io.Reader)
 	if same, err := ix.unchanged(ctx, docID, hash); err != nil || same {
 		return err
 	}
-	img, err := decodeImage(data)
+	img, err := media.DecodeImage(data)
 	if err != nil {
 		return fmt.Errorf("search: decode image %q: %w", docID, err)
 	}
@@ -228,7 +212,8 @@ func (ix *MediaIndex) IndexImage(ctx context.Context, docID string, r io.Reader)
 // frames the Sampler picks (see WithSampler), each embedded as an image. It
 // is a no-op when the file's bytes are unchanged since the last call;
 // hashing the file is far cheaper than decoding it. A video with no frames
-// or segments to embed is ErrNoFrames, and nothing is stored.
+// or segments to embed, an audio-only file among them (media.ErrNoVideo),
+// is ErrNoFrames, and nothing is stored.
 func (ix *MediaIndex) IndexVideo(ctx context.Context, docID, path string) error {
 	if err := checkID(docID); err != nil {
 		return err
@@ -247,7 +232,7 @@ func (ix *MediaIndex) IndexVideo(ctx context.Context, docID, path string) error 
 	if ix.video != nil {
 		segments, err := ix.video.EmbedVideo(ctx, path)
 		if err != nil {
-			return fmt.Errorf("search: embed video %q: %w", docID, err)
+			return videoError("embed", docID, err)
 		}
 		chunks := make([]vector.Chunk, len(segments))
 		for i, s := range segments {
@@ -260,9 +245,19 @@ func (ix *MediaIndex) IndexVideo(ctx context.Context, docID, path string) error 
 	}
 	frames, err := ix.sampler.Sample(ctx, path)
 	if err != nil {
-		return fmt.Errorf("search: sample video %q: %w", docID, err)
+		return videoError("sample", docID, err)
 	}
 	return ix.indexFrames(ctx, docID, hash, frames)
+}
+
+// videoError wraps the error of the step (embed, sample) that failed on the
+// video docID. A file with no video stream (media.ErrNoVideo) is
+// ErrNoFrames as well: nothing in it can be embedded.
+func videoError(step, docID string, err error) error {
+	if errors.Is(err, media.ErrNoVideo) {
+		return fmt.Errorf("%w: %s video %q: %w", ErrNoFrames, step, docID, err)
+	}
+	return fmt.Errorf("search: %s video %q: %w", step, docID, err)
 }
 
 // IndexFrames embeds frames the caller extracted itself (its own decoder or
@@ -375,7 +370,7 @@ func (ix *MediaIndex) SearchImage(ctx context.Context, r io.Reader, limit int) (
 	if err != nil {
 		return nil, err
 	}
-	img, err := decodeImage(data)
+	img, err := media.DecodeImage(data)
 	if err != nil {
 		return nil, fmt.Errorf("search: decode query image: %w", err)
 	}
@@ -504,29 +499,6 @@ func (ix *MediaIndex) search(ctx context.Context, queries []queryVector, limit i
 		out[i] = MediaMatch{DocID: h.DocID, Score: h.Score, At: time.Duration(h.Seq) * time.Millisecond, QueryAt: queries[h.Query].at}
 	}
 	return out, nil
-}
-
-// decodeImage decodes one picture in any registered format, refusing one
-// that claims more than maxImagePixels before any pixel is allocated, and
-// turns a JPEG upright by its EXIF orientation, which image/jpeg ignores: a
-// phone stores a portrait photo as landscape pixels plus that tag, and
-// embedded unturned it would match its own upright video frames less.
-func decodeImage(data []byte) (image.Image, error) {
-	cfg, format, err := image.DecodeConfig(bytes.NewReader(data))
-	if err != nil {
-		return nil, err
-	}
-	if cfg.Width <= 0 || cfg.Height <= 0 || cfg.Width*cfg.Height > maxImagePixels {
-		return nil, fmt.Errorf("image is %dx%d pixels, more than %d", cfg.Width, cfg.Height, maxImagePixels)
-	}
-	img, _, err := image.Decode(bytes.NewReader(data))
-	if err != nil {
-		return nil, err
-	}
-	if format == "jpeg" {
-		img = orient(img, jpegOrientation(data))
-	}
-	return img, nil
 }
 
 // fileHash is the SHA-256 of the file, hex, streamed: the content IndexVideo

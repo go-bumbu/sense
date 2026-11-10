@@ -10,10 +10,12 @@ import (
 	"image/color/palette"
 	"image/draw"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
 
+	"github.com/go-bumbu/sense/media"
 	"github.com/go-bumbu/sense/search"
 	"github.com/go-bumbu/sense/vector"
 )
@@ -641,4 +643,59 @@ func TestStoreRefusesAnotherAlgorithmsVectors(t *testing.T) {
 			t.Errorf("%d bits: indexing dHash vectors into a pHash collection: error = %v, want ErrModelMismatch", bits, err)
 		}
 	}
+}
+
+// TestHashOfARotatedJPEGMatchesTheIndex: search.MediaIndex turns a JPEG
+// upright by its EXIF orientation before hashing it. A Hash of the same
+// bytes decoded with media.DecodeImage is the indexed vector; one decoded
+// with image.Decode, which ignores the orientation, is not.
+func TestHashOfARotatedJPEGMatchesTheIndex(t *testing.T) {
+	ctx := context.Background()
+	e := mustNew(t, Config{})
+	store := vector.NewMemStore()
+	ix, err := search.NewMediaIndex(e, store, "tenant", "space", "duplicates")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// a camera's portrait photo: landscape pixels and orientation 6 (turn
+	// 90° clockwise to view)
+	plain := jpegBytes(t, picture(7, 320, 240), 90)
+	exif := []byte("Exif\x00\x00MM\x00\x2a\x00\x00\x00\x08\x00\x01\x01\x12\x00\x03\x00\x00\x00\x01\x00\x06\x00\x00\x00\x00\x00\x00")
+	n := len(exif) + 2
+	data := slices.Concat(plain[:2], []byte{0xFF, 0xE1, byte(n >> 8), byte(n)}, exif, plain[2:])
+	if err := ix.IndexImage(ctx, "portrait", bytes.NewReader(data)); err != nil {
+		t.Fatal(err)
+	}
+	chunks, err := store.Chunks(ctx, vector.Coord{Index: "tenant", Partition: "space", Collection: "duplicates"}, "portrait")
+	if err != nil || len(chunks) != 1 {
+		t.Fatalf("Chunks = %v, %v; want the one indexed vector", chunks, err)
+	}
+
+	upright, err := media.DecodeImage(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b := upright.Bounds(); b.Dx() != 240 || b.Dy() != 320 {
+		t.Fatalf("media.DecodeImage gave %v, want the 240x320 portrait", b)
+	}
+	if got := mustVector(t, e, upright); !slices.Equal(got, chunks[0].Vector) {
+		t.Error("the hash of the picture media.DecodeImage decodes is not the indexed vector")
+	}
+	raw, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := mustVector(t, e, raw); slices.Equal(got, chunks[0].Vector) {
+		t.Error("the hash of the unturned picture is the indexed vector; the test no longer tells the two apart")
+	}
+}
+
+// mustVector is the vector EmbedImages makes of img.
+func mustVector(t *testing.T, e *Embedder, img image.Image) []float32 {
+	t.Helper()
+	vecs, err := e.EmbedImages(context.Background(), []image.Image{img})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return vecs[0]
 }

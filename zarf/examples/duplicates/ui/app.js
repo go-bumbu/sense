@@ -107,7 +107,7 @@
           el('div', { class: 'title' }, el('span', { title: h.picture.id }, h.picture.name), el('span', { class: 'num' }, h.score.toFixed(4))),
           bar(h.score, res.minScore),
           el('div', { class: 'relation' }, 'cosine ', el('b', {}, h.score.toFixed(4)), ` = 1 − 2·${h.hamming}/${bits} → `, el('b', {}, `${h.hamming} bits`),
-            h.distance < 0 ? null : el('span', { class: agrees ? '' : 'differs', title: agrees ? 'the distance of the two raw hashes, computed without the index' : 'the index turns a JPEG upright by its EXIF orientation before hashing; Hash takes the pixels as decoded' },
+            h.distance < 0 ? null : el('span', { class: agrees ? '' : 'differs', title: agrees ? 'the distance of the two raw hashes, computed without the index' : 'the raw hash disagrees with the index: both decode with media.DecodeImage, so this should not happen' },
               ` · Hash.Distance ${h.distance}${agrees ? ' ✓' : ' ≠'}`)))));
     }
     return list;

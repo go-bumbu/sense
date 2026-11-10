@@ -148,3 +148,17 @@ func (c *MemCache) Prune(_ context.Context, unusedSince time.Time) (int64, error
 	}
 	return n, nil
 }
+
+// Stats implements EmbeddingCache.
+func (c *MemCache) Stats(context.Context) (CacheStats, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	var st CacheStats
+	for _, entries := range c.indexes {
+		for _, e := range entries {
+			st.Entries++
+			st.VectorBytes += 4 * int64(len(e.vec))
+		}
+	}
+	return st, nil
+}

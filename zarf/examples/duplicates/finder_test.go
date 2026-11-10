@@ -463,7 +463,7 @@ func TestDecode_RefusesWhatIsNoPicture(t *testing.T) {
 	copy(huge[16:24], []byte{0, 0, 0x80, 0, 0, 0, 0x80, 0}) // 32768 × 32768
 	binary.BigEndian.PutUint32(huge[29:33], crc32.ChecksumIEEE(huge[12:29]))
 	write(t, filepath.Join(dir, "huge.png"), huge)
-	if _, err := decode(filepath.Join(dir, "huge.png")); err == nil || !strings.Contains(err.Error(), "megapixels") {
+	if _, err := decode(filepath.Join(dir, "huge.png")); err == nil || !strings.Contains(err.Error(), "pixels, more than") {
 		t.Errorf("a picture of too many pixels: %v", err)
 	}
 	// a header that decodes and pixels that do not
