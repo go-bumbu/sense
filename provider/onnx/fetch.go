@@ -20,8 +20,10 @@ import (
 // Pinned runtime. The onnxruntime_go bindings are written against one
 // release's C API headers, so the build downloaded here is bumped together
 // with the binding version in go.mod; pins_test.go fails until pinnedBinding
-// matches the module version again. The digests are the ones GitHub
-// publishes for the release assets.
+// matches the module version again. The builds come from go-bumbu/sense-deps,
+// which repackages Microsoft's signed NuGet builds in the layout of the
+// upstream release tarballs (the upstream GitHub release has been unreachable
+// since 2026-11-17); the digests are the ones its assets.json pins.
 const (
 	// pinnedBinding is the onnxruntime_go release whose headers LibVersion
 	// matches.
@@ -43,7 +45,7 @@ const (
 	// the largest by far.
 	maxLibraryBytes = 2 << 30
 	// downloadTimeout bounds the first-use downloads as a whole: the model
-	// is ~370 MB and the CUDA build ~450 MB.
+	// is ~370 MB and the CUDA build ~245 MB.
 	downloadTimeout = 30 * time.Minute
 	// userAgent names this package's downloads.
 	userAgent = "sense-onnx"
@@ -58,31 +60,34 @@ const (
 // asset is one downloadable file with its expected digest.
 type asset = fetch.Asset
 
+// depsURL is the release download base of go-bumbu/sense-deps.
+const depsURL = fetch.DepsURL
+
 // libAssets are the release builds of LibVersion per GOOS/GOARCH and
 // variant. The CPU builds cover the three platforms the release ships as
-// tarballs (the macOS one includes CoreML); the CUDA build is the CUDA 12
-// one for linux/amd64. Other platforms and builds (Windows, CUDA 13,
+// tarballs (the macOS one includes CoreML); the CUDA build is the CUDA 13
+// one for linux/amd64. Other platforms and builds (Windows, CUDA 12,
 // TensorRT, ROCm) go into an operator-supplied LibDir.
 var libAssets = map[string]asset{
 	"linux/amd64/" + variantCPU: {
-		URL:    "https://github.com/microsoft/onnxruntime/releases/download/v1.31.1/onnxruntime-linux-x64-1.31.1.tgz",
-		SHA256: "c849e36a1ef3e22d4ff217b9d1ce4a3cf5b9467b975610913ae959ad5b16bdc9",
-		Size:   11413655,
+		URL:    depsURL + "onnxruntime-v1.31.1/onnxruntime-linux-x64-1.31.1.tgz",
+		SHA256: "67ffe9df0e5bae1bd8f3215768c464db536b44b6fe85e0e6bb6a1fce498fe624",
+		Size:   11413374,
 	},
 	"linux/arm64/" + variantCPU: {
-		URL:    "https://github.com/microsoft/onnxruntime/releases/download/v1.31.1/onnxruntime-linux-aarch64-1.31.1.tgz",
-		SHA256: "5317505e2da99be65f8e2775ba3c2afd6d2961fd78aba1bd8f56159f48820c78",
-		Size:   10332381,
+		URL:    depsURL + "onnxruntime-v1.31.1/onnxruntime-linux-aarch64-1.31.1.tgz",
+		SHA256: "6f4b8bd6199aa6c51d5bd493cfcd96b33bc8f552f6d2afc8aac337765d15d174",
+		Size:   10453595,
 	},
 	"darwin/arm64/" + variantCPU: {
-		URL:    "https://github.com/microsoft/onnxruntime/releases/download/v1.31.1/onnxruntime-osx-arm64-1.31.1.tgz",
-		SHA256: "2e1344a1926ee50eb25b38153cb6992c3567515aef0e677a1a520a1798896d6f",
-		Size:   36936435,
+		URL:    depsURL + "onnxruntime-v1.31.1/onnxruntime-osx-arm64-1.31.1.tgz",
+		SHA256: "2a5ff4b116085093b19a371b953c27a53ac6cb0ebbe397bc6eade860df7ff98c",
+		Size:   12948953,
 	},
 	"linux/amd64/" + variantCUDA: {
-		URL:    "https://github.com/microsoft/onnxruntime/releases/download/v1.31.1/onnxruntime-linux-x64-gpu_cuda12-1.31.1.tgz",
-		SHA256: "57cd51f677eca19a269cdba31b0c16c15d73a8feea41f170aa8b750447ab1f70",
-		Size:   450233079,
+		URL:    depsURL + "onnxruntime-v1.31.1/onnxruntime-linux-x64-gpu_cuda13-1.31.1.tgz",
+		SHA256: "46aec7af4f3143d4f33bbbf449c77e8da8d5073d2d4ef435550af82dcea517eb",
+		Size:   244731742,
 	},
 }
 

@@ -14,7 +14,7 @@
 // its model until Close; two run side by side.
 //
 // CPU is the default. Runtime.Provider selects CUDA (the gpu build of the
-// runtime, CUDA 12 and cuDNN 9 on the host) or CoreML (the macOS build).
+// runtime, CUDA 13 and cuDNN 9 on the host) or CoreML (the macOS build).
 //
 // The pinned runtime build (LibVersion) is the one whose C API headers the
 // onnxruntime_go version in this module's go.mod was written against; the
@@ -49,7 +49,7 @@ const (
 	// ProviderCPU runs on the CPU with the default build; it is the zero
 	// value's meaning.
 	ProviderCPU Provider = "cpu"
-	// ProviderCUDA runs on an NVIDIA GPU: the runtime's gpu build, CUDA 12
+	// ProviderCUDA runs on an NVIDIA GPU: the runtime's gpu build, CUDA 13
 	// and cuDNN 9 installed on the host. A managed LibDir downloads that
 	// build on linux/amd64.
 	ProviderCUDA Provider = "cuda"

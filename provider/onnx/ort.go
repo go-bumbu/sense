@@ -91,7 +91,7 @@ func appendProvider(so *ort.SessionOptions, opts sessionOptions) error {
 			return fmt.Errorf("cuda provider: %w", err)
 		}
 		if err := so.AppendExecutionProviderCUDA(co); err != nil {
-			return fmt.Errorf("cuda provider (is this the gpu build of onnxruntime, with CUDA 12 and cuDNN 9 installed?): %w", err)
+			return fmt.Errorf("cuda provider (is this the gpu build of onnxruntime, with CUDA 13 and cuDNN 9 installed?): %w", err)
 		}
 	case ProviderCoreML:
 		if err := so.AppendExecutionProviderCoreMLV2(map[string]string{}); err != nil {
