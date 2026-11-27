@@ -155,10 +155,6 @@ and `todo list --json` cover the common actions — run `todo --help`.
 - [ ] one Chunker for search and tagging
   search.MarkdownChunker{MaxChars} and tagging.Chunk(text, maxBytes) differ in units and live apart; Tagger and Generator take only an int. Left open on 2026-11-09 on purpose: the two do different jobs (structure-aware retrieval chunks with a heading path vs even pieces for scoring), the tagging floors were measured on tagging.Chunk, and a shared port would need a re-measure to prove it changes nothing.
 
-## search, vector, media
-
-## tagging and eval
-
 ## providers and fetch
 
 - [ ] phash: measure thresholds on real photos
