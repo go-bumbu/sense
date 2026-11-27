@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"image"
 	"io"
 	"math"
 	"path/filepath"
@@ -12,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-bumbu/sense/media"
 	"github.com/go-bumbu/sense/provider/phash"
 	"github.com/go-bumbu/sense/search"
 )
@@ -249,7 +249,7 @@ func (f *Finder) Search(ctx context.Context, kindName string, r io.Reader, thres
 	elapsed := time.Since(start)
 	// the raw hash of the same bytes, to set next to the index's cosine
 	var query *phash.Hash
-	if img, _, err := image.Decode(bytes.NewReader(data)); err == nil {
+	if img, err := media.DecodeImage(data); err == nil {
 		if h, err := k.hasher.Hash(img); err == nil {
 			query = &h
 		}

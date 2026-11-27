@@ -145,7 +145,8 @@
       el('div', { class: 'act' }, btn),
       facts([
         ['store', c.backend],
-        ['size', c.bytes >= 0 ? bytes(c.bytes) + ' (the database that holds it; the cache has no count of its own)' : (c.sizeError || 'unknown')],
+        ['entries', c.entries >= 0 ? `${c.entries} embeddings, ${bytes(c.vectorBytes)} of vectors` : (c.statsError || 'unknown')],
+        ['size', c.bytes >= 0 ? bytes(c.bytes) + ' (the database that holds it)' : (c.sizeError || 'unknown')],
         ['last prune', p ? `${when(p.at)}: ${p.removed} embeddings removed, of those unused for ${duration(p.unusedForMs)}` : 'none yet'],
       ]),
       p && p.error ? el('div', { class: 'problem' }, p.error) : null);

@@ -1,16 +1,34 @@
-package search
+package media
 
 import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"hash/crc32"
 	"image"
 	"image/color"
 	"image/jpeg"
+	"image/png"
+	"strings"
 	"testing"
 )
 
-var white = color.RGBA{230, 230, 230, 255}
+var (
+	red   = color.RGBA{200, 30, 30, 255}
+	green = color.RGBA{30, 200, 30, 255}
+	blue  = color.RGBA{30, 30, 200, 255}
+	white = color.RGBA{230, 230, 230, 255}
+)
+
+// pngOf encodes img as a PNG.
+func pngOf(t testing.TB, img image.Image) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, img); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
+}
 
 // quadrants draws a w×h picture of four coloured quadrants.
 func quadrants(w, h int, tl, tr, bl, br color.RGBA) *image.RGBA {
@@ -108,7 +126,7 @@ func TestDecodeImage_TurnsJPEGsUpright(t *testing.T) {
 				// an XMP APP1 first, which the parser must pass over
 				xmp := app1([]byte("http://ns.adobe.com/xap/1.0/\x00<x/>"))
 				data := jpegWith(t, quadrants(sw, sh, tc.tl, tc.tr, tc.bl, tc.br), xmp, exifSegment(order, tc.orientation))
-				img, err := decodeImage(data)
+				img, err := DecodeImage(data)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -159,7 +177,7 @@ func TestJPEGOrientation_Malformed(t *testing.T) {
 		if o := jpegOrientation(data); o != 1 {
 			t.Errorf("%s: orientation %d, want 1", name, o)
 		}
-		if _, err := decodeImage(data); err != nil && name != "short segment" && name != "segment past end" {
+		if _, err := DecodeImage(data); err != nil && name != "short segment" && name != "segment past end" {
 			t.Errorf("%s: decode: %v", name, err)
 		}
 	}
@@ -188,4 +206,34 @@ func FuzzJPEGOrientation(f *testing.F) {
 			t.Fatalf("orientation %d turned 3x2 into %v", o, b)
 		}
 	})
+}
+
+// hugePNG is a syntactically valid PNG header claiming a 100000×100000
+// picture: DecodeConfig believes it, Decode would try to allocate 40 GB.
+func hugePNG() []byte {
+	var buf bytes.Buffer
+	buf.WriteString("\x89PNG\r\n\x1a\n")
+	ihdr := make([]byte, 13)
+	binary.BigEndian.PutUint32(ihdr[0:], 100000)
+	binary.BigEndian.PutUint32(ihdr[4:], 100000)
+	ihdr[8], ihdr[9] = 8, 6 // 8-bit RGBA
+	chunk := append([]byte("IHDR"), ihdr...)
+	_ = binary.Write(&buf, binary.BigEndian, uint32(len(ihdr)))
+	buf.Write(chunk)
+	_ = binary.Write(&buf, binary.BigEndian, crc32.ChecksumIEEE(chunk))
+	return buf.Bytes()
+}
+
+func TestDecodeImage_RefusesHugePictures(t *testing.T) {
+	if _, err := DecodeImage(hugePNG()); err == nil || !strings.Contains(err.Error(), "pixels") {
+		t.Errorf("err = %v, want a pixel-count refusal", err)
+	}
+	// a real picture still decodes whole after the config pass
+	img, err := DecodeImage(pngOf(t, quadrants(300, 200, red, green, blue, white)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b := img.Bounds(); b.Dx() != 300 || b.Dy() != 200 {
+		t.Errorf("decoded %v, want 300x200", b)
+	}
 }

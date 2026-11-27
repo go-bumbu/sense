@@ -146,6 +146,7 @@ and `todo list --json` cover the common actions — run `todo --help`.
 - [ ] image / video => tags
   - describe it (kronk vision LLM), then reuse the text => tags stacks
   - optional, skip the caption: SigLIP 2 scores the image against tag names
+- [ ] face detection and clasification
 
 # review 2026-11-09
 
@@ -153,10 +154,6 @@ and `todo list --json` cover the common actions — run `todo --help`.
 
 - [ ] one Chunker for search and tagging
   search.MarkdownChunker{MaxChars} and tagging.Chunk(text, maxBytes) differ in units and live apart; Tagger and Generator take only an int. Left open on 2026-11-09 on purpose: the two do different jobs (structure-aware retrieval chunks with a heading path vs even pieces for scoring), the tagging floors were measured on tagging.Chunk, and a shared port would need a re-measure to prove it changes nothing.
-
-## search, vector, media
-
-## tagging and eval
 
 ## providers and fetch
 
@@ -167,15 +164,15 @@ and `todo list --json` cover the common actions — run `todo --help`.
 
 ## found while building the example
 
-- [ ] EmbeddingCache has no count or size
+- [x] EmbeddingCache has no count or size
   The status page can only show the database file's bytes.
 - [ ] no lazy VideoEmbedder; Vision.Fingerprint needs a loaded model
   The example keeps the vision model eager for this reason. A LazyVideoEmbedder and a fingerprint computed from spec and options (like ModelID) would let it load on first use.
-- [ ] yzma.Completer has no Accel(); LazyCompleter has no Model()
+- [x] yzma.Completer has no Accel(); LazyCompleter has no Model()
   The status page cannot say what runs the chat model or name it before load.
-- [ ] audio-only video fails with ffmpeg's error, not ErrNoFrames
+- [x] audio-only video fails with ffmpeg's error, not ErrNoFrames
   IndexVideo on an mp4 without a video stream surfaces ffmpeg's own message.
-- [ ] phash.Hash does not turn EXIF-rotated JPEGs upright
+- [x] phash.Hash does not turn EXIF-rotated JPEGs upright
   MediaIndex applies EXIF orientation in an unexported decode, so a raw phash.Hash of the same file can disagree with the indexed vector. From reading the code, not reproduced.
 
 # change log

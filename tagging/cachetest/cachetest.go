@@ -95,6 +95,7 @@ func Run(t *testing.T, newCache func(t *testing.T, now func() time.Time) tagging
 		{"EmptyVectorIsAnError", timeless(emptyVectorIsAnError)},
 		{"SlicesAreCopies", timeless(slicesAreCopies)},
 		{"DeleteIndexDropsOnlyThatIndex", timeless(deleteIndexDropsOnlyThatIndex)},
+		{"StatsCountEveryIndex", timeless(statsCountEveryIndex)},
 		{"PruneDeletesUnused", pruneDeletesUnused},
 		{"PruneKeepsWhatWasUsedAtTheCutoff", pruneKeepsWhatWasUsedAtTheCutoff},
 		{"GetRefreshesStaleEntries", getRefreshesStaleEntries},
@@ -113,6 +114,31 @@ func Run(t *testing.T, newCache func(t *testing.T, now func() time.Time) tagging
 			c.run(t, newCache(t, clk.Now), clk)
 		})
 	}
+}
+
+// stats reads the cache's stats and fails the test unless they are want.
+func stats(t *testing.T, c tagging.EmbeddingCache, want tagging.CacheStats) {
+	t.Helper()
+	got, err := c.Stats(context.Background())
+	if err != nil || got != want {
+		t.Fatalf("Stats = %+v, %v; want %+v, nil", got, err, want)
+	}
+}
+
+// statsCountEveryIndex: Stats counts the entries of all indexes and the four
+// bytes of each dimension of their vectors; a replaced entry counts once, at
+// its new size, and a deleted index no longer counts.
+func statsCountEveryIndex(t *testing.T, c tagging.EmbeddingCache) {
+	stats(t, c, tagging.CacheStats{})
+	put(t, c, idx, map[tagging.CacheKey][]float32{k1: v1, k2: v2})
+	put(t, c, "other", map[tagging.CacheKey][]float32{k1: v1})
+	stats(t, c, tagging.CacheStats{Entries: 3, VectorBytes: 4 * int64(len(v1)+len(v2)+len(v1))})
+	put(t, c, idx, map[tagging.CacheKey][]float32{k2: {1}})
+	stats(t, c, tagging.CacheStats{Entries: 3, VectorBytes: 4 * int64(len(v1)+1+len(v1))})
+	if err := c.DeleteIndex(context.Background(), "other"); err != nil {
+		t.Fatal(err)
+	}
+	stats(t, c, tagging.CacheStats{Entries: 2, VectorBytes: 4 * int64(len(v1)+1)})
 }
 
 // prune removes what was last used before cutoff and fails the test unless

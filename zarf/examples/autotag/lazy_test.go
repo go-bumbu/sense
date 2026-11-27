@@ -25,7 +25,7 @@ func lazyNotebook(t *testing.T, cache tagging.EmbeddingCache, file string, loads
 		}
 		return sensetest.FakeEmbedder{}, nil
 	})
-	chat := sense.NewLazyCompleter(func(context.Context) (sense.Completer, error) {
+	chat := sense.NewLazyCompleter("", func(context.Context) (sense.Completer, error) {
 		return &sensetest.FakeCompleter{Replies: []string{flatReply}}, nil
 	})
 	state := func(l interface {

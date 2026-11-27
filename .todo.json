@@ -1,0 +1,305 @@
+{
+  "_comment": "This file is managed by the todo CLI. Do not edit it directly, by hand or with a script. Read it with todo: `todo next --json` (what to work on), `todo show --id <id|ref> --json` (one task), `todo list --flat` (every item as flat JSON records). Change it with todo commands (add, edit, move, status, assign, rm, ...; see `todo --help`), which keep its ids and rules valid.",
+  "version": 9,
+  "refs": {
+    "last": {
+      "SENSE": 1
+    }
+  },
+  "sprints": [
+    {
+      "id": "0000000",
+      "ref": "SENSE-001",
+      "name": "Imported"
+    }
+  ],
+  "categories": [
+    {
+      "id": "v21wb1x",
+      "title": "TODO"
+    },
+    {
+      "id": "wqh1hx2",
+      "title": "tagging",
+      "parent": "v21wb1x"
+    },
+    {
+      "id": "r65jjke",
+      "title": "upstream",
+      "parent": "v21wb1x"
+    },
+    {
+      "id": "hjry1jv",
+      "title": "image/vide",
+      "parent": "v21wb1x"
+    },
+    {
+      "id": "3hj387b",
+      "title": "API",
+      "parent": "v21wb1x"
+    },
+    {
+      "id": "r3aqh2w",
+      "title": "features",
+      "parent": "v21wb1x"
+    },
+    {
+      "id": "9efsb3t",
+      "title": "expected fetaures"
+    },
+    {
+      "id": "qs33ynv",
+      "title": "review 2026-11-09"
+    },
+    {
+      "id": "z20eazt",
+      "title": "architecture",
+      "parent": "qs33ynv"
+    },
+    {
+      "id": "5dy7dak",
+      "title": "providers and fetch",
+      "parent": "qs33ynv"
+    },
+    {
+      "id": "5w07y0w",
+      "title": "second pass",
+      "parent": "qs33ynv"
+    },
+    {
+      "id": "s7zsfnk",
+      "title": "found while building the example",
+      "parent": "qs33ynv"
+    },
+    {
+      "id": "bnvahq4",
+      "title": "change log"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "kf0w2fz",
+      "category": "wqh1hx2",
+      "title": "judge tags against parts of a page",
+      "status": "open",
+      "description": "A page is one blended embedding of its first ~2 KB, so a second or side topic\nis often missed: stitched pages of two single-tag golden documents get both\ntags 0.59 of the time (60 of 102, TestGoldenTagging), a minor side topic\nrarely."
+    },
+    {
+      "id": "bpjd8yp",
+      "category": "wqh1hx2",
+      "title": "sub-centroids for tags that mix topics",
+      "status": "open",
+      "description": "A tag whose examples cover unrelated topics averages them into one centroid\nthat matches neither well. Keep up to 3 sub-centroids per tag, chosen by an\neval scenario that includes parent-tag merges."
+    },
+    {
+      "id": "m1gmsja",
+      "category": "wqh1hx2",
+      "title": "use rejections as negative evidence",
+      "status": "open",
+      "description": "A caller can keep a rejected tag off one document, but the Tagger learns nothing from it, so a wrong tag can return on similar documents. Re-measured 2026-11-09: with the whole tag family removed no golden document gets a wrong tag (0 of 84); with only its own tags removed 0.64 stay untagged and 0.81 get none but an ancestor. So on the golden set the wrong picks are related tags, and negative evidence would have to be judged on real rejections."
+    },
+    {
+      "id": "daaw5xy",
+      "category": "wqh1hx2",
+      "title": "real multi-tag documents in the golden set",
+      "status": "open",
+      "description": "TestGoldenTagging's two-topic check stitches pairs of single-tag documents\ninto one page (60 of 102 got both tags), which only stands in for a real\npage about two topics. Add real documents that carry several tags and drop\nthe stitching."
+    },
+    {
+      "id": "jw75syb",
+      "category": "wqh1hx2",
+      "title": "try Generator windows of 8-12 KB",
+      "status": "open",
+      "description": "6 KB windows beat 2 KB ones (F1 0.84 vs 0.74 under the scoring before 2026-11-09) with fewer calls; larger windows need a bigger chat context and were not measured."
+    },
+    {
+      "id": "9pyqh7y",
+      "category": "wqh1hx2",
+      "title": "re-measure NameMinScore at 0.43",
+      "status": "open",
+      "description": "Short essences (names only 0.81 vs 0.79, mixed 0.868 vs 0.860) and long items (mean F1 0.87 vs 0.84 under the 2026-11-09 scoring) both score a little better at 0.43; stitched two-topic pages lose 0.04 (0.83 vs 0.87 with ChunkBytes) and long-member pages 0.03. Weigh it on real data before moving the default."
+    },
+    {
+      "id": "frt8hge",
+      "category": "wqh1hx2",
+      "title": "turn ChunkBytes on by default",
+      "status": "open",
+      "description": "Every golden essence is one piece at 2000 bytes, so the short numbers do not move, two-topic pages gain (0.80 to 0.87) and long items find side topics (0.65 to 0.90 under the 2026-11-09 scoring). Costs a re-embed of long items for current users, and a default that depends on the embedder's window."
+    },
+    {
+      "id": "0kkanrk",
+      "category": "r65jjke",
+      "title": "jupiterrider/ffi: load libffi lazily",
+      "status": "open",
+      "description": "ffi opens libffi.so.8 in init() and panics if it is missing, which makes\nlibffi8 a startup requirement of every binary that imports provider/yzma,\neven one that never embeds anything. Ask for a lazy load that returns an\nerror on first use instead."
+    },
+    {
+      "id": "j60qart",
+      "category": "r65jjke",
+      "title": "yzma: bind ggml_set_abort_callback",
+      "status": "open",
+      "description": "llama.cpp aborts the process on a failed assertion (e.g. a batch larger than\nn_ubatch); the symbol exists in build b11429, and a binding would let\nprovider/yzma turn such asserts into errors. Until then the package\nvalidates every batch itself."
+    },
+    {
+      "id": "qr2nctt",
+      "category": "hjry1jv",
+      "title": "run provider/onnx on a GPU",
+      "status": "open",
+      "description": "The CUDA (gpu_cuda12 build, device_id) and CoreML paths are wired but were\nonly unit-tested with a fake session; the real-model tests ran on a CPU.\nCheck the CUDA provider loads, that batches speed up, and the yalue note on\nCUDA overwriting Go's signal handlers (onnxruntime_go issue 140)."
+    },
+    {
+      "id": "rdej171",
+      "category": "hjry1jv",
+      "title": "vision model follow-ups",
+      "status": "open",
+      "description": "Matryoshka: the model's vectors can be cut to 64..2048 and re-normalized; a VisionOptions setting for the output size would shrink the store (the model id already carries dims). The 8B model (MMEB-V2 77.8 vs 73.2) and the Qwen3-VL-Reranker as a second stage are untried. The instruction is one per Vision; per-call instructions (a query instruction that differs from the document one) would need a second prompt path. ImageMaxTokens did not change the token count in the spike (484 for 800x600, 1,437 for 1080x1350): check what the projector's bounds do. Short videos go to libmtmd's own ffmpeg, which has no protocol whitelist: routing them through the Cutter would close that."
+    },
+    {
+      "id": "9sxjfjz",
+      "category": "hjry1jv",
+      "title": "run provider/yzma on CUDA and on macOS",
+      "status": "open",
+      "description": "Accel auto picks the build from the hardware and offloads to the GPU that\nregisters; Vulkan on an AMD 890M iGPU was run (1.5 s per photo vs 7 s on\nthe CPU). The CUDA 13.4 build (needs the CUDA runtime on the host) and the\nMetal build are pinned and chosen but were not run. ROCm is detected but\nhas no pinned build (AMD cards go through Vulkan); Windows has none."
+    },
+    {
+      "id": "rgh40xt",
+      "category": "hjry1jv",
+      "title": "CI for the vision model",
+      "status": "open",
+      "description": "make test-vision downloads 2.7 GB and needs ffmpeg; it is not in\nvalidate.yml. A cached job like embeddings-real would cover it."
+    },
+    {
+      "id": "s2grscv",
+      "category": "hjry1jv",
+      "title": "iamge Auto Tagging",
+      "status": "open",
+      "description": "Two routes. Caption then tag: a captioner writes text and the existing Tagger\ntakes that text. That needs libmtmd, which wantLib (provider/yzma/fetch.go)\nskips today; the pinned llama.cpp build is b11429.\nMoondream 2 (vikhyatk/moondream2): 1.9B, Apache-2.0 on the HF card. The\nvendor page says Moondream model license 1.0: commercial use allowed, no\ngeneral-purpose hosted model service. ggml-org/moondream2-20250414-GGUF is\nF16 only, 2.84 GB + 910 MB mmproj. Likely works on yzma, untested.\nMoondream 2 0.5B: 375 / 479 MiB download and 816 / 996 MiB RAM (int4 / int8),\nlicense 1.0 (HF card fetch failed, so taken from the vendor page). yzma\nsupport unknown.\nQwen3-VL-2B-Instruct (Qwen/Qwen3-VL-2B-Instruct): Apache-2.0, 2B, takes image\nand video. It is the VLM yzma's README benchmarks (its CLI example uses\nQwen2.5-VL-3B), so the safest fit on yzma. Quantized sizes not checked.\nFlorence-2 base / large (microsoft/Florence-2-base, -large): MIT, 0.23B /\n0.77B, three caption lengths plus detection and OCR. Not supported by\nllama.cpp: ONNX or PyTorch only.\nFixed tag lists skip the text step but return their own vocabulary, not the\napp's tags, so they need a mapping. RAM++ (4,585 tags, Apache-2.0, 873 MB\nINT8 ONNX, ~1.8 GB RAM). WD v3 SwinV2 98M / EVA02-L 315M (Apache-2.0, ONNX\n467 MB / 1.26 GB, trained on Danbooru art, so it fits anime-style images).\nBoth need onnxruntime, not yzma.\nNot for a commercial app: Moondream 3 Preview (BSL 1.1, bars selling hosted\nor embedded access), LLaVA 1.6 (card says research use, OpenAI-policy caveat\non its training data)."
+    },
+    {
+      "id": "g8s54hz",
+      "category": "hjry1jv",
+      "title": "video auto tagging",
+      "status": "open",
+      "description": "Dedicated video taggers were not researched. These reuse the models above.\nFrames: sample frames (1 FPS or scene cuts), run the image route on each and\nkeep the tags that show up in enough frames (RAM++, WD v3, or a caption plus\nthe Tagger).\nWhole clip: Qwen3-VL-2B-Instruct takes video (card), and yzma's pkg/mtmd has a\nvideo path that needs ffmpeg and ffprobe on PATH (read in its source, not\nrun). That gives one caption per clip to feed the Tagger.\nEmbedding route (untested): embed the clip with Qwen3-VL-Embedding 2B and\ncompare it with tag texts or tag centroids built in the same space. X-CLIP\nbase can also score a clip against tag texts (its card lists zero-shot video\nclassification), but it only sees 8 frames at 224x224.\nNot for a commercial app: VideoMAE v2 (CC-BY-NC-4.0)."
+    },
+    {
+      "id": "e3x6r2g",
+      "category": "3hj387b",
+      "title": "move towards an api service that can run stuff",
+      "status": "open"
+    },
+    {
+      "id": "6k8nxfd",
+      "category": "3hj387b",
+      "title": "move to kronk sdk as provider",
+      "status": "open"
+    },
+    {
+      "id": "9x9c7yn",
+      "category": "3hj387b",
+      "title": "make it possible to use local models or remote subscriptions",
+      "status": "open"
+    },
+    {
+      "id": "aepratc",
+      "category": "r3aqh2w",
+      "title": "hybrid search: keywords next to embeddings",
+      "status": "open",
+      "description": "Search is embeddings only, which misses exact names, error codes, version numbers, rare words and one-word queries (ErrModelMismatch, pgx). Both backends have a keyword engine (FTS5 in SQLite, tsvector in Postgres): the store keeps a keyword index of the chunks it already holds, and Index.Search merges the two rankings with reciprocal rank fusion, which needs no score tuning. Covered by vectortest; shown on the text search page."
+    },
+    {
+      "id": "rpcc31t",
+      "category": "r3aqh2w",
+      "title": "topic discovery: clusters of untagged items as tag suggestions",
+      "status": "open",
+      "description": "The Tagger learns only from tags people made and the Generator works one text at a time; nothing looks across the corpus (\"14 untagged notes about sourdough: tag them cooking / bread?\"). Cluster the stored vectors of untagged items, let the Completer name each cluster, check the name against the members as the Tagger blends name and members. Works for photos too (trips, events), as the duplicates page groups by hash. Eases the cold start SmoothingK only softens."
+    },
+    {
+      "id": "ja46g01",
+      "category": "r3aqh2w",
+      "title": "grounded answers over indexed documents",
+      "status": "open",
+      "description": "Retrieve with Index.Search, have the Completer answer only from those chunks, cite doc ids and heading paths. A capability next to tagging.Generator that takes a Completer and an Index. Keep it small: no agents, no conversation memory."
+    },
+    {
+      "id": "x7tp91q",
+      "category": "r3aqh2w",
+      "title": "query-time filters on document metadata",
+      "status": "open",
+      "description": "Scoping a search by date, type or folder needs an allow-list of ids today, which does not scale. Small per-document attributes, filtered inside the store's one search (\"photos from 2024\", \"only PDFs\"). Wait for a consumer that needs it."
+    },
+    {
+      "id": "j2tqz03",
+      "category": "9efsb3t",
+      "title": "image / video => description",
+      "status": "open",
+      "description": "- kronk + vision LLM + mmproj (Qwen3-VL-2B-Instruct)\n- video: ffmpeg pulls keyframes, sent as images (kronk doesn't decode video)"
+    },
+    {
+      "id": "v4cbcgr",
+      "category": "9efsb3t",
+      "title": "image / video => tags",
+      "status": "open",
+      "description": "- describe it (kronk vision LLM), then reuse the text => tags stacks\n- optional, skip the caption: SigLIP 2 scores the image against tag names"
+    },
+    {
+      "id": "k0gcay9",
+      "category": "9efsb3t",
+      "title": "face detection and clasification",
+      "status": "open"
+    },
+    {
+      "id": "myd9xdc",
+      "category": "z20eazt",
+      "title": "one Chunker for search and tagging",
+      "status": "open",
+      "description": "search.MarkdownChunker{MaxChars} and tagging.Chunk(text, maxBytes) differ in units and live apart; Tagger and Generator take only an int. Left open on 2026-11-09 on purpose: the two do different jobs (structure-aware retrieval chunks with a heading path vs even pieces for scoring), the tagging floors were measured on tagging.Chunk, and a shared port would need a re-measure to prove it changes nothing."
+    },
+    {
+      "id": "hkz2nxn",
+      "category": "5dy7dak",
+      "title": "phash: measure thresholds on real photos",
+      "status": "open",
+      "description": "The duplicate thresholds come from synthetic pictures. Flat pictures all share the zero hash and a small mark on a near-flat picture flips about half the pHash bits. No ParseHash yet, and the vectors are not a compact bit column in the stores. grey.go has its own compose-on-white code that could use internal/imageutil if it gives identical 8-bit values."
+    },
+    {
+      "id": "13fsbq1",
+      "category": "s7zsfnk",
+      "sprint": "0000000",
+      "title": "EmbeddingCache has no count or size",
+      "status": "done",
+      "description": "The status page can only show the database file's bytes."
+    },
+    {
+      "id": "epy7a0x",
+      "category": "s7zsfnk",
+      "title": "no lazy VideoEmbedder; Vision.Fingerprint needs a loaded model",
+      "status": "open",
+      "description": "The example keeps the vision model eager for this reason. A LazyVideoEmbedder and a fingerprint computed from spec and options (like ModelID) would let it load on first use."
+    },
+    {
+      "id": "045a2gp",
+      "category": "s7zsfnk",
+      "sprint": "0000000",
+      "title": "yzma.Completer has no Accel(); LazyCompleter has no Model()",
+      "status": "done",
+      "description": "The status page cannot say what runs the chat model or name it before load."
+    },
+    {
+      "id": "wzecsne",
+      "category": "s7zsfnk",
+      "sprint": "0000000",
+      "title": "audio-only video fails with ffmpeg's error, not ErrNoFrames",
+      "status": "done",
+      "description": "IndexVideo on an mp4 without a video stream surfaces ffmpeg's own message."
+    },
+    {
+      "id": "edd2jj7",
+      "category": "s7zsfnk",
+      "sprint": "0000000",
+      "title": "phash.Hash does not turn EXIF-rotated JPEGs upright",
+      "status": "done",
+      "description": "MediaIndex applies EXIF orientation in an unexported decode, so a raw phash.Hash of the same file can disagree with the indexed vector. From reading the code, not reproduced."
+    }
+  ]
+}

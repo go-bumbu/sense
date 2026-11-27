@@ -99,7 +99,7 @@ var kinds = map[string]func(l *loader) subject{
 		}}
 	},
 	"LazyCompleter": func(l *loader) subject {
-		chat := sense.NewLazyCompleter(func(ctx context.Context) (sense.Completer, error) {
+		chat := sense.NewLazyCompleter("", func(ctx context.Context) (sense.Completer, error) {
 			if err := l.run(ctx); err != nil {
 				return nil, err
 			}
@@ -486,11 +486,11 @@ func TestLazy_NilModelIsAnError(t *testing.T) {
 	add("image embedder, nil", i1.Load, i1.State)
 	i2 := sense.NewLazyImageEmbedder("", 4, func(context.Context) (sense.ImageEmbedder, error) { return noImageEmbedder, nil })
 	add("image embedder, nil pointer", i2.Load, i2.State)
-	c1 := sense.NewLazyCompleter(func(context.Context) (sense.Completer, error) { return nil, nil })
+	c1 := sense.NewLazyCompleter("", func(context.Context) (sense.Completer, error) { return nil, nil })
 	add("completer, nil", c1.Load, c1.State)
-	c2 := sense.NewLazyCompleter(func(context.Context) (sense.Completer, error) { return noCompleter, nil })
+	c2 := sense.NewLazyCompleter("", func(context.Context) (sense.Completer, error) { return noCompleter, nil })
 	add("completer, nil pointer", c2.Load, c2.State)
-	c3 := sense.NewLazyCompleter(nil)
+	c3 := sense.NewLazyCompleter("", nil)
 	add("completer, no load function", c3.Load, c3.State)
 
 	for name, s := range cases {
@@ -667,7 +667,7 @@ func TestLazyEmbedder_ForwardsRole(t *testing.T) {
 // user messages as they came.
 func TestLazyCompleter_ForwardsThePrompt(t *testing.T) {
 	fake := &sensetest.FakeCompleter{Replies: []string{"bread"}}
-	chat := sense.NewLazyCompleter(func(context.Context) (sense.Completer, error) { return fake, nil })
+	chat := sense.NewLazyCompleter("", func(context.Context) (sense.Completer, error) { return fake, nil })
 	reply, err := chat.Complete(context.Background(), "write tags", "sourdough")
 	if err != nil || reply != "bread" {
 		t.Fatalf("Complete = %q, %v", reply, err)
@@ -676,6 +676,44 @@ func TestLazyCompleter_ForwardsThePrompt(t *testing.T) {
 		t.Errorf("the loaded model saw %+v, want %+v", fake.Calls(), want)
 	}
 }
+
+// TestLazyCompleter_ModelWithoutLoading: Model is the configured name before
+// any load, and a loaded model that names another one fails the load.
+func TestLazyCompleter_ModelWithoutLoading(t *testing.T) {
+	loads := 0
+	chat := sense.NewLazyCompleter("org/chat", func(context.Context) (sense.Completer, error) {
+		loads++
+		return namedCompleter{&sensetest.FakeCompleter{}, "org/chat"}, nil
+	})
+	if chat.Model() != "org/chat" || loads != 0 {
+		t.Fatalf("Model = %q after %d loads; want %q without one", chat.Model(), loads, "org/chat")
+	}
+	if err := chat.Load(context.Background()); err != nil {
+		t.Fatalf("Load of the configured model: %v", err)
+	}
+
+	other := sense.NewLazyCompleter("org/chat", func(context.Context) (sense.Completer, error) {
+		return namedCompleter{&sensetest.FakeCompleter{}, "org/other"}, nil
+	})
+	if err := other.Load(context.Background()); err == nil || !strings.Contains(err.Error(), "org/other") {
+		t.Errorf("Load of another model = %v; want an error naming it", err)
+	}
+
+	unnamed := sense.NewLazyCompleter("org/chat", func(context.Context) (sense.Completer, error) {
+		return &sensetest.FakeCompleter{}, nil
+	})
+	if err := unnamed.Load(context.Background()); err != nil {
+		t.Errorf("Load of a model that names none: %v; want it unchecked", err)
+	}
+}
+
+// namedCompleter is a Completer that names its model.
+type namedCompleter struct {
+	sense.Completer
+	model string
+}
+
+func (n namedCompleter) Model() string { return n.model }
 
 func TestLazyState_String(t *testing.T) {
 	want := map[sense.LazyState]string{

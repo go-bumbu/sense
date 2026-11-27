@@ -3,9 +3,7 @@ package search
 import (
 	"bytes"
 	"context"
-	"encoding/binary"
 	"errors"
-	"hash/crc32"
 	"image"
 	"image/color"
 	"image/png"
@@ -477,36 +475,6 @@ func TestMediaIndex_DependencyErrors(t *testing.T) {
 	}
 	if err := withSampler.IndexVideo(ctx, "v", filepath.Join(t.TempDir(), "missing.mp4")); err == nil || !strings.Contains(err.Error(), "hash video") {
 		t.Errorf("missing file: err = %v", err)
-	}
-}
-
-// hugePNG is a syntactically valid PNG header claiming a 100000×100000
-// picture: DecodeConfig believes it, Decode would try to allocate 40 GB.
-func hugePNG() []byte {
-	var buf bytes.Buffer
-	buf.WriteString("\x89PNG\r\n\x1a\n")
-	ihdr := make([]byte, 13)
-	binary.BigEndian.PutUint32(ihdr[0:], 100000)
-	binary.BigEndian.PutUint32(ihdr[4:], 100000)
-	ihdr[8], ihdr[9] = 8, 6 // 8-bit RGBA
-	chunk := append([]byte("IHDR"), ihdr...)
-	_ = binary.Write(&buf, binary.BigEndian, uint32(len(ihdr)))
-	buf.Write(chunk)
-	_ = binary.Write(&buf, binary.BigEndian, crc32.ChecksumIEEE(chunk))
-	return buf.Bytes()
-}
-
-func TestDecodeImage_RefusesHugePictures(t *testing.T) {
-	if _, err := decodeImage(hugePNG()); err == nil || !strings.Contains(err.Error(), "pixels") {
-		t.Errorf("err = %v, want a pixel-count refusal", err)
-	}
-	// a real picture still decodes whole after the config pass
-	img, err := decodeImage(encoded(t, pic(300, 200, red, blue)))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if b := img.Bounds(); b.Dx() != 300 || b.Dy() != 200 {
-		t.Errorf("decoded %v, want 300x200", b)
 	}
 }
 

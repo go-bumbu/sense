@@ -114,6 +114,9 @@ type Cache struct {
 	// Size returns the bytes of the database that holds the cache; nil
 	// leaves the size out.
 	Size func(ctx context.Context) (int64, error)
+	// Stats returns how many embeddings the cache holds and the bytes of
+	// their vectors; nil leaves them out.
+	Stats func(ctx context.Context) (entries, vectorBytes int64, err error)
 	// LastPrune returns the outcome of the last prune; the zero Prune
 	// means none ran yet. Nil leaves it out.
 	LastPrune func() Prune
@@ -278,6 +281,10 @@ type CacheStatus struct {
 	// not known.
 	Bytes     int64  `json:"bytes"`
 	SizeError string `json:"sizeError,omitempty"`
+	// Entries and VectorBytes are what the cache holds; -1 when not known.
+	Entries     int64  `json:"entries"`
+	VectorBytes int64  `json:"vectorBytes"`
+	StatsError  string `json:"statsError,omitempty"`
 	// LastPrune is nil until a prune ran.
 	LastPrune *PruneStatus `json:"lastPrune,omitempty"`
 	CanPrune  bool         `json:"canPrune"`
@@ -446,7 +453,15 @@ func collectionStatus(ctx context.Context, c Collection) CollectionStatus {
 }
 
 func cacheStatus(ctx context.Context, c Cache) CacheStatus {
-	st := CacheStatus{Name: c.Name, Backend: c.Backend, Bytes: -1, CanPrune: c.PruneNow != nil}
+	st := CacheStatus{Name: c.Name, Backend: c.Backend, Bytes: -1, Entries: -1, VectorBytes: -1, CanPrune: c.PruneNow != nil}
+	if c.Stats != nil {
+		n, b, err := c.Stats(ctx)
+		if err != nil {
+			st.StatsError = err.Error()
+		} else {
+			st.Entries, st.VectorBytes = n, b
+		}
+	}
 	if c.Size != nil {
 		n, err := c.Size(ctx)
 		if err != nil {

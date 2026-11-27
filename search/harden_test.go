@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"image"
 	"math"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/go-bumbu/sense"
+	"github.com/go-bumbu/sense/media"
 	"github.com/go-bumbu/sense/sensetest"
 	"github.com/go-bumbu/sense/vector"
 )
@@ -91,6 +93,44 @@ func TestMediaIndex_VideoWithNothingToEmbedIsAnError(t *testing.T) {
 	if sampler.calls != 2 {
 		t.Errorf("%d sample calls, want the video tried again", sampler.calls)
 	}
+}
+
+// TestMediaIndex_AudioOnlyVideoIsErrNoFrames: a file with no video stream,
+// which the sampler or the video embedder reports as media.ErrNoVideo, is
+// ErrNoFrames, keeps the cause, and leaves nothing stored.
+func TestMediaIndex_AudioOnlyVideoIsErrNoFrames(t *testing.T) {
+	ctx := context.Background()
+	path := tempFile(t, "sound.mp4", []byte("sound"))
+	noVideo := fmt.Errorf("ffprobe: %q: %w", path, media.ErrNoVideo)
+	sampled, _, sampledStore := newMediaIndex(t, WithSampler(media.SamplerFunc(func(context.Context, string) ([]media.Frame, error) {
+		return nil, noVideo
+	})))
+	embedded, _, embeddedStore := newMediaIndex(t, WithVideoEmbedder(failingVideo{&sensetest.FakeVideoEmbedder{}, noVideo}))
+	for name, tc := range map[string]struct {
+		ix    *MediaIndex
+		store *vector.MemStore
+	}{
+		"sampler":        {sampled, sampledStore},
+		"video embedder": {embedded, embeddedStore},
+	} {
+		err := tc.ix.IndexVideo(ctx, "sound", path)
+		if !errors.Is(err, ErrNoFrames) || !errors.Is(err, media.ErrNoVideo) || !strings.Contains(err.Error(), `"sound"`) {
+			t.Errorf("%s: %v, want ErrNoFrames and media.ErrNoVideo naming the item", name, err)
+		}
+		if h, _ := tc.store.Hashes(ctx, tc.ix.coord, "sound"); len(h) != 0 {
+			t.Errorf("%s: stored %v for a file without video", name, h)
+		}
+	}
+}
+
+// failingVideo is a VideoEmbedder whose EmbedVideo fails with err.
+type failingVideo struct {
+	*sensetest.FakeVideoEmbedder
+	err error
+}
+
+func (f failingVideo) EmbedVideo(context.Context, string) ([]sense.Segment, error) {
+	return nil, f.err
 }
 
 // TestIndex_SanitizesText: NUL bytes and invalid UTF-8, which a Postgres

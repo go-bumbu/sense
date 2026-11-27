@@ -55,7 +55,7 @@ func openTagging(ctx context.Context, o options, text *textModel, chat *chatMode
 		WarmLater: true,
 		Info: autotag.Info{
 			Embedder:       text.name,
-			Completer:      chat.name,
+			Completer:      chat.Model(),
 			NameMinScore:   tagging.DefaultNameMinScore,
 			MemberMinScore: tagging.DefaultMemberMinScore,
 			MinScore:       o.tagScore,

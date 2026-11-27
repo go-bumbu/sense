@@ -199,8 +199,8 @@ func TestParseProbe(t *testing.T) {
 		"[STREAM]\nduration=N/A\n[/STREAM]\n[FORMAT]\nformat_name=matroska,webm\nduration=11.008000\n[/FORMAT]\n": {duration: 11008 * time.Millisecond},
 		// a transport stream lists the stream twice, once inside its program
 		"[PROGRAM]\n[STREAM]\nduration=6.000000\n[/STREAM]\n[/PROGRAM]\n[STREAM]\nduration=6.000000\n[/STREAM]\n[FORMAT]\nduration=9.000000\n[/FORMAT]\n": {duration: 6 * time.Second},
-		// no video stream at all: the container's, as before
-		"[FORMAT]\nformat_name=mov,mp4,m4a,3gp,3g2,mj2\nduration=1.000000\n[/FORMAT]\n": {duration: time.Second},
+		// no video stream at all: an audio-only file
+		"[FORMAT]\nformat_name=mov,mp4,m4a,3gp,3g2,mj2\nduration=1.000000\n[/FORMAT]\n": {duration: time.Second, noVideo: true},
 		// a stream that claims what no video is: the container's; both: unknown
 		"[STREAM]\nduration=9223372036.0\n[/STREAM]\n[FORMAT]\nduration=11.000000\n[/FORMAT]\n":        {duration: 11 * time.Second},
 		"[STREAM]\nduration=nan\n[/STREAM]\n[FORMAT]\nformat_name=image2\nduration=1e300\n[/FORMAT]\n": {image2: true},

@@ -1,8 +1,10 @@
-// Package media holds the ports for decoding video. Sampler turns a video
-// file into the Frames that stand for it, which search embeds as images;
-// Cutter is the file surgery a sense.VideoEmbedder needs to embed a video
-// in segments. The implementations live in media/ffmpeg, over the ffmpeg
-// binary; SamplerFunc adapts a function, e.g. for tests or for an
+// Package media holds the ports for decoding video, and DecodeImage, the
+// picture decoding search.MediaIndex applies (upright by a JPEG's EXIF
+// orientation) for whoever hashes or embeds a picture on its own. Sampler
+// turns a video file into the Frames that stand for it, which search embeds
+// as images; Cutter is the file surgery a sense.VideoEmbedder needs to embed
+// a video in segments. The implementations live in media/ffmpeg, over the
+// ffmpeg binary; SamplerFunc adapts a function, e.g. for tests or for an
 // application that already has its own frame extraction. The video
 // embedding port itself, sense.VideoEmbedder, is in the root package with
 // the other embedder ports.
@@ -29,6 +31,11 @@ const MaxDuration = 7 * 24 * time.Hour
 // long the file's header said the video was.
 var ErrPastEnd = errors.New("media: the cut starts at or past the end of the video")
 
+// ErrNoVideo is what a Sampler and Cutter.Duration return, wrapped, for a
+// file that holds no video stream, such as an audio-only MP4. Match it with
+// errors.Is.
+var ErrNoVideo = errors.New("media: the file holds no video stream")
+
 // Frame is one still taken from a video: the picture and the time it was
 // taken at, from the start of the video.
 type Frame struct {
@@ -40,7 +47,8 @@ type Frame struct {
 // rather than a reader because the common containers need seeking. The
 // implementation decides which frames to take (scene cuts, a fixed interval)
 // and how many at most; the frames come back in time order. A file that
-// cannot be read or holds no video is an error, not an empty result.
+// cannot be read or holds no video is an error, not an empty result: one
+// wrapping ErrNoVideo when the file has no video stream.
 type Sampler interface {
 	Sample(ctx context.Context, path string) ([]Frame, error)
 }
@@ -60,7 +68,8 @@ func (f SamplerFunc) Sample(ctx context.Context, path string) ([]Frame, error) {
 type Cutter interface {
 	// Duration is the length of the video at path, of its pictures and not
 	// of a sound track that runs on after them; 0 when the file does not
-	// say, or says more than MaxDuration.
+	// say, or says more than MaxDuration. A file with no video stream is
+	// ErrNoVideo, wrapped.
 	Duration(ctx context.Context, path string) (time.Duration, error)
 	// Cut writes the stretch of path from start for length (to the end when
 	// length is 0 or less) into out, whose extension names the container.

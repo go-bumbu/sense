@@ -177,6 +177,12 @@ func (e *Embedder) EmbedImages(ctx context.Context, images []image.Image) ([][]f
 // Hash returns the picture's hash itself, the bits EmbedImages turns into a
 // vector, for grouping duplicates without a vector store. A nil picture, one
 // without pixels or one of more than 256 megapixels is an error.
+//
+// The hash is of the pixels as given. To compare it with what
+// search.MediaIndex indexed from the same file, decode the file with
+// media.DecodeImage, which turns a JPEG upright by its EXIF orientation as
+// the index does; image.Decode does not, and a rotated photo then hashes to
+// other bits.
 func (e *Embedder) Hash(img image.Image) (Hash, error) {
 	if err := check(img); err != nil {
 		return Hash{}, fmt.Errorf("phash: image %w", err)

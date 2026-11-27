@@ -175,8 +175,11 @@ func TestSample_Errors(t *testing.T) {
 	if out, err := exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "sine=d=1", audio).CombinedOutput(); err != nil {
 		t.Fatalf("render audio: %v: %s", err, out)
 	}
-	if _, err := s.Sample(ctx, audio); err == nil || !strings.Contains(err.Error(), "ffmpeg") {
-		t.Errorf("audio only: err = %v, want ffmpeg's", err)
+	if _, err := s.Sample(ctx, audio); !errors.Is(err, media.ErrNoVideo) {
+		t.Errorf("audio only: Sample err = %v, want media.ErrNoVideo", err)
+	}
+	if _, err := s.Duration(ctx, audio); !errors.Is(err, media.ErrNoVideo) {
+		t.Errorf("audio only: Duration err = %v, want media.ErrNoVideo", err)
 	}
 
 	garbage := filepath.Join(dir, "garbage.mp4")

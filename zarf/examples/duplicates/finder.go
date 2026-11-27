@@ -24,6 +24,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/go-bumbu/sense/media"
 	"github.com/go-bumbu/sense/provider/phash"
 	"github.com/go-bumbu/sense/search"
 	"github.com/go-bumbu/sense/vector"
@@ -39,9 +40,6 @@ const (
 	indexPartition = "local"
 	collectionBase = "duplicates-"
 )
-
-// maxPixels is the largest picture the scan decodes, phash's own limit.
-const maxPixels = 256 << 20
 
 // Errors the handler maps to statuses.
 var (
@@ -369,25 +367,15 @@ func (f *Finder) hash(p *Picture) error {
 	return nil
 }
 
-// decode reads a picture file, refusing one of more pixels than phash
-// hashes before its pixels are read.
+// decode reads a picture file and decodes it as the MediaIndex does: upright
+// by its EXIF orientation, and refused when it claims more pixels than phash
+// hashes, before its pixels are read.
 func decode(path string) (image.Image, error) {
-	file, err := os.Open(path) //nolint:gosec // a file the walk found under the scanned directory, only decoded
+	data, err := os.ReadFile(path) //nolint:gosec // a file the walk found under the scanned directory, only decoded
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = file.Close() }()
-	cfg, _, err := image.DecodeConfig(file)
-	if err != nil {
-		return nil, fmt.Errorf("not a picture: %w", err)
-	}
-	if int64(cfg.Width)*int64(cfg.Height) > maxPixels {
-		return nil, fmt.Errorf("%d×%d is more than %d megapixels", cfg.Width, cfg.Height, maxPixels>>20)
-	}
-	if _, err := file.Seek(0, 0); err != nil {
-		return nil, err
-	}
-	img, _, err := image.Decode(file)
+	img, err := media.DecodeImage(data)
 	if err != nil {
 		return nil, fmt.Errorf("not a picture: %w", err)
 	}

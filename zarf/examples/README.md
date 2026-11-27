@@ -116,8 +116,9 @@ Collections tab says how many collections need fixing.
   duplicates page's collections appear
   once a search has opened them: one per hash, in a `vector.MemStore`.
 - **Embedding cache** is the Tagger's `tagging.EmbeddingCache`: where it
-  lives, the size of the database that holds it (a cache has no count of its
-  own), and what the last `Tagger.Prune` removed. **prune now** runs one.
+  lives, how many embeddings it holds and the bytes of their vectors
+  (`EmbeddingCache.Stats`), the size of the database that holds it, and what
+  the last `Tagger.Prune` removed. **prune now** runs one.
 
 ## Media search: what to click
 
@@ -126,8 +127,8 @@ Collections tab says how many collections need fixing.
   be indexed; those are retried on every rescan. A file the library refuses
   for a reason it names shows that instead, in amber: *too large* for an image
   longer than `MAX_IMAGE_BYTES` (`search.ErrTooLarge`), *no frames* for a
-  video the sampler takes no frame from (`search.ErrNoFrames`; a file ffmpeg
-  cannot read at all, a sound file named `.mp4` say, is `failed` with
+  video the sampler takes no frame from (`search.ErrNoFrames`, a sound file
+  named `.mp4` among them; a file ffmpeg cannot read at all is `failed` with
   ffmpeg's own error).
 - **Click a thumbnail** to see the item large and, under *looks like*, the
   items closest to it. Each hit shows its cosine **score** with a bar; the
@@ -249,9 +250,9 @@ both faces of that package.
   gets its own collection, opened by the first search that asks for it, in a
   `vector.MemStore`: hashing is fast enough that nothing is worth keeping
   between runs. The status page lists them.
-- A JPEG with an EXIF orientation is the one case where the two faces differ
-  (≠ instead of ✓): the index turns it upright before hashing, as it does for
-  a model, and a raw `Hash` takes the pixels as decoded.
+- A JPEG with an EXIF orientation agrees too: the page decodes with
+  `media.DecodeImage`, which turns it upright as the index does before
+  hashing; a raw `Hash` of what `image.Decode` gives would differ.
 
 ## Auto tagging: what to click
 

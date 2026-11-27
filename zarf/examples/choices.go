@@ -85,7 +85,7 @@ func chatChoice(ch *chatModel) status.Choice {
 		c.Options = append(c.Options, status.Option{
 			Name: name, Engine: "llama.cpp " + yzma.LibTag, Bytes: spec.Size,
 			Does: "Writes new tags for a note; loads on the first recommendation.",
-			Key:  keyIf(name == ch.name, "chat"),
+			Key:  keyIf(name == ch.Model(), "chat"),
 		})
 	}
 	if len(c.Options) == 1 {

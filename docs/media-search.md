@@ -45,7 +45,9 @@ through `image.RegisterFormat`.
 (`WithMaxImageBytes`) and refuse a longer stream with `search.ErrTooLarge`, and refuse a
 picture of more than 256 megapixels before decoding it. A video the `Sampler` takes no
 frames from, or the `VideoEmbedder` no segments, is `search.ErrNoFrames` and nothing is
-stored, so the next run tries it again rather than keep an item that is never found.
+stored, so the next run tries it again rather than keep an item that is never found. A
+file with no video stream at all, an audio-only `.mp4` say, is `search.ErrNoFrames` too,
+wrapping the `media.ErrNoVideo` that `media/ffmpeg` reports for it.
 
 - **Models.** The default, `google/siglip2-base-patch16-224` (Apache-2.0, 768
   dimensions), was trained with a text tower, so its vectors can later be matched by
@@ -85,7 +87,9 @@ stored, so the next run tries it again rather than keep an item that is never fo
   at once.
 - **Limits.** A JPEG is turned upright by its EXIF orientation (all eight, read by a
   small parser of its own that takes a broken block for none) before it is embedded;
-  other formats are embedded as decoded. Transparent parts are composed on white, here
+  other formats are embedded as decoded. The decoder is `media.DecodeImage`: use it for
+  a picture you hash or embed yourself, a `phash.Hash` to set next to a hit say, so that
+  it is the picture the index saw. Transparent parts are composed on white, here
   and in the vision model below, so a logo on a transparent background is the same
   picture to every model. A picture of an extreme shape (one pixel wide, twenty thousand
   tall) costs no more memory to prepare than any other. The SigLIP 2 text tower is not

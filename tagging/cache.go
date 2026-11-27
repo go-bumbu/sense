@@ -81,6 +81,19 @@ type EmbeddingCache interface {
 	// which first marks what is still in use and refuses a cutoff too recent
 	// for the last-used times to be trusted.
 	Prune(ctx context.Context, unusedSince time.Time) (int64, error)
+	// Stats counts the entries of every index and the bytes their vectors
+	// take, for a status page or a decision to prune.
+	Stats(ctx context.Context) (CacheStats, error)
+}
+
+// CacheStats is what an EmbeddingCache holds, across every index.
+type CacheStats struct {
+	// Entries is the number of cached embeddings.
+	Entries int64
+	// VectorBytes is the size of their vectors, four bytes per dimension. A
+	// database takes more than this for the same entries: the keys, the
+	// last-used times and its own indexes and pages.
+	VectorBytes int64
 }
 
 // CacheRefreshAfter is how stale a last-used time gets before a Get rewrites

@@ -39,7 +39,7 @@ func newFixture(t *testing.T) *fixture {
 	image := sense.NewLazyImageEmbedder(sensetest.FakeImageEmbedderModel, 48, func(context.Context) (sense.ImageEmbedder, error) {
 		return nil, errors.New("the model file is missing")
 	})
-	chat := sense.NewLazyCompleter(func(context.Context) (sense.Completer, error) {
+	chat := sense.NewLazyCompleter("", func(context.Context) (sense.Completer, error) {
 		return &sensetest.FakeCompleter{}, nil
 	})
 	t.Cleanup(func() { _ = f.text.Close(); _ = image.Close(); _ = chat.Close() })
@@ -68,6 +68,7 @@ func newFixture(t *testing.T) *fixture {
 		Cache: &Cache{
 			Name: "embedding cache", Backend: "memory",
 			Size:      func(context.Context) (int64, error) { return 4096, nil },
+			Stats:     func(context.Context) (int64, int64, error) { return 12, 3072, nil },
 			LastPrune: func() Prune { return last },
 			PruneNow: func(context.Context) (Prune, error) {
 				f.pruned++
@@ -297,11 +298,11 @@ func TestCollections_AStoreErrorIsShown(t *testing.T) {
 	}
 }
 
-func TestCache_SizeAndPrune(t *testing.T) {
+func TestCache_SizeStatsAndPrune(t *testing.T) {
 	ctx := context.Background()
 	f := newFixture(t)
 	c := f.svc.Snapshot(ctx).Cache
-	if c == nil || c.Bytes != 4096 || c.LastPrune != nil || !c.CanPrune {
+	if c == nil || c.Bytes != 4096 || c.Entries != 12 || c.VectorBytes != 3072 || c.LastPrune != nil || !c.CanPrune {
 		t.Fatalf("cache before a prune: %+v", c)
 	}
 	st, err := f.svc.Prune(ctx)
@@ -315,6 +316,7 @@ func TestCache_FailuresAndMissingActions(t *testing.T) {
 	// a cache whose size and prune fail
 	failing, err := New(Config{Cache: &Cache{
 		Size:      func(context.Context) (int64, error) { return 0, errors.New("no such file") },
+		Stats:     func(context.Context) (int64, int64, error) { return 0, 0, errors.New("database is locked") },
 		LastPrune: func() Prune { return Prune{At: time.Now(), Err: errors.New("cutoff too recent")} },
 		PruneNow:  func(context.Context) (Prune, error) { return Prune{}, errors.New("closed") },
 	}})
@@ -322,7 +324,7 @@ func TestCache_FailuresAndMissingActions(t *testing.T) {
 		t.Fatal(err)
 	}
 	c := failing.Snapshot(ctx).Cache
-	if c.Bytes != -1 || c.SizeError != "no such file" || c.LastPrune == nil || c.LastPrune.Error != "cutoff too recent" {
+	if c.Bytes != -1 || c.SizeError != "no such file" || c.Entries != -1 || c.StatsError != "database is locked" || c.LastPrune == nil || c.LastPrune.Error != "cutoff too recent" {
 		t.Errorf("a failing cache: %+v", c)
 	}
 	if _, err := failing.Prune(ctx); err == nil || !strings.Contains(err.Error(), "closed") {
@@ -333,7 +335,7 @@ func TestCache_FailuresAndMissingActions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c := bare.Snapshot(ctx).Cache; c.Bytes != -1 || c.CanPrune || c.LastPrune != nil {
+	if c := bare.Snapshot(ctx).Cache; c.Bytes != -1 || c.Entries != -1 || c.VectorBytes != -1 || c.CanPrune || c.LastPrune != nil {
 		t.Errorf("a bare cache: %+v", c)
 	}
 	if _, err := bare.Prune(ctx); !errors.Is(err, ErrNoAction) {

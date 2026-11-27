@@ -98,7 +98,7 @@ func openStatus(o options, s service) (*status.Service, error) {
 			},
 			{
 				Key: "chat", Name: "chat model", UsedBy: "auto tagging (the Generator writes tags with it)",
-				ID: s.chat.name, Runtime: llama, RunsOn: func() string { return s.chat.accel + " (as asked; a yzma.Completer does not report its device)" }, Lazy: s.chat.LazyCompleter,
+				ID: s.chat.Model(), Runtime: llama, RunsOn: s.chat.runsOn.String, Lazy: s.chat.LazyCompleter,
 				Why: "behind sense.LazyCompleter: 2.5 GB that only the recommend button needs",
 			},
 			media,
@@ -111,6 +111,10 @@ func openStatus(o options, s service) (*status.Service, error) {
 		Collections: s.collections,
 		Cache: &status.Cache{
 			Name: "embedding cache of the Tagger", Backend: s.stores.cacheAt, Size: s.stores.cacheBytes,
+			Stats: func(ctx context.Context) (int64, int64, error) {
+				st, err := s.stores.cache.Stats(ctx)
+				return st.Entries, st.VectorBytes, err
+			},
 			LastPrune: func() status.Prune { return pruneOf(s.notebook.LastPrune()) },
 			PruneNow: func(ctx context.Context) (status.Prune, error) {
 				_, err := s.notebook.PruneCache(ctx, time.Now().Add(-pruneUnusedFor))

@@ -72,9 +72,10 @@ What each package needs to build and run, and how the providers install and run 
 - **`provider/onnx`** is CGO and needs a C compiler to build (no ONNX Runtime headers:
   the bindings carry their own). At runtime it needs the ONNX Runtime shared library:
   a managed `LibDir` downloads the pinned CPU build (`onnx.LibVersion`, ~11 MB) on
-  linux/amd64, linux/arm64 and darwin/arm64. For **CUDA** set `Runtime.Provider` to
-  `onnx.ProviderCUDA`: a managed `LibDir` on linux/amd64 downloads the CUDA 12 build
-  (~450 MB), and the host needs CUDA 12 and cuDNN 9 installed; **CoreML** is built into
+  linux/amd64, linux/arm64 and darwin/arm64, from the releases of
+  [go-bumbu/sense-deps](https://github.com/go-bumbu/sense-deps), as is yzma's llama.cpp. For **CUDA** set `Runtime.Provider` to
+  `onnx.ProviderCUDA`: a managed `LibDir` on linux/amd64 downloads the CUDA 13 build
+  (~245 MB), and the host needs CUDA 13 and cuDNN 9 installed; **CoreML** is built into
   the macOS build. The bindings' headers target one runtime release, so keep
   `onnxruntime_go` where this module pins it, as with yzma. The default model is a
   ~370 MB download on first use, and a loaded process holds about 1 GB.

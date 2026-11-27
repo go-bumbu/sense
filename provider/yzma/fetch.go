@@ -90,37 +90,39 @@ var defaultCompleterAsset = asset{
 // host; the macOS build has Metal built in). linux/amd64 is the release
 // target; the others are pinned because their digests are published with
 // the same release. Other platforms install the libraries with the yzma CLI
-// into an operator-supplied LibDir (see Runtime.ManagedLibDir). The digests
-// are those of the ggml-org release assets, except linux/arm64/cpu, which
-// comes from the manifest yzma verifies against.
+// into an operator-supplied LibDir (see Runtime.ManagedLibDir). The files
+// are downloaded from go-bumbu/sense-deps, which keeps them byte for byte;
+// the digests are those of the ggml-org release assets, except
+// linux/arm64/cpu (hybridgroup/llama-cpp-builder), which comes from the
+// manifest yzma verifies against.
 var libAssets = map[string]asset{
 	"linux/amd64/cpu": {
-		URL:    "https://github.com/ggml-org/llama.cpp/releases/download/b11429/llama-b11429-bin-ubuntu-x64.tar.gz",
+		URL:    fetch.DepsURL + "llama.cpp-b11429/llama-b11429-bin-ubuntu-x64.tar.gz",
 		SHA256: "f6d25dde8f51133143d1453da4fd5f73b145127177612a283bf7995957af3392",
 		Size:   17693462,
 	},
 	"linux/amd64/vulkan": {
-		URL:    "https://github.com/ggml-org/llama.cpp/releases/download/b11429/llama-b11429-bin-ubuntu-vulkan-x64.tar.gz",
+		URL:    fetch.DepsURL + "llama.cpp-b11429/llama-b11429-bin-ubuntu-vulkan-x64.tar.gz",
 		SHA256: "632c4e98feba2b94407a2130e3133e0c3aefb0ea1ab41337e926d8bfafdd0b74",
 		Size:   31636673,
 	},
 	"linux/amd64/cuda": {
-		URL:    "https://github.com/ggml-org/llama.cpp/releases/download/b11429/llama-b11429-bin-ubuntu-cuda-13.4-x64.tar.gz",
+		URL:    fetch.DepsURL + "llama.cpp-b11429/llama-b11429-bin-ubuntu-cuda-13.4-x64.tar.gz",
 		SHA256: "8082b7eaa74a714c9fecca19128f751c8e32da763ee8096b8ad1e824da7621d3",
 		Size:   152519318,
 	},
 	"linux/arm64/cpu": {
-		URL:    "https://github.com/hybridgroup/llama-cpp-builder/releases/download/v0.6.0/llama-v0.6.0-bin-ubuntu-cpu-arm64.tar.gz",
+		URL:    fetch.DepsURL + "llama-cpp-builder-v0.6.0/llama-v0.6.0-bin-ubuntu-cpu-arm64.tar.gz",
 		SHA256: "296e1cac3c68912c8d77bbaea9a51b2c19aecf67173b7d2d1ff52d6ab4c5d8de",
 		Size:   8759371,
 	},
 	"linux/arm64/vulkan": {
-		URL:    "https://github.com/ggml-org/llama.cpp/releases/download/b11429/llama-b11429-bin-ubuntu-vulkan-arm64.tar.gz",
+		URL:    fetch.DepsURL + "llama.cpp-b11429/llama-b11429-bin-ubuntu-vulkan-arm64.tar.gz",
 		SHA256: "702d99c4219b4314cc6d3b10fb41ae96cbfc68226305c2681269dfb51487af34",
 		Size:   24845090,
 	},
 	"darwin/arm64/metal": {
-		URL:    "https://github.com/ggml-org/llama.cpp/releases/download/b11429/llama-b11429-bin-macos-arm64.tar.gz",
+		URL:    fetch.DepsURL + "llama.cpp-b11429/llama-b11429-bin-macos-arm64.tar.gz",
 		SHA256: "740288ec6887be94280a5dfa25b5e23a78285cab104519e6c7e218904ee82459",
 		Size:   11971406,
 	},

@@ -259,6 +259,17 @@ func checkVectors(loaded interface{ Dimensions() int }, dims int, model string) 
 	return nil
 }
 
+// checkModel is the check of LazyCompleter: when both the loaded model and
+// the configuration name a model, they must name the same one.
+func checkModel(loaded any, model string) error {
+	if id, ok := loaded.(Identified); ok && model != "" {
+		if got := id.Model(); got != "" && got != model {
+			return fmt.Errorf("sense: loaded the model %q, configured for %q", got, model)
+		}
+	}
+	return nil
+}
+
 // LazyEmbedder is an Embedder that defers building the real one (with the
 // yzma embedder: its model and library downloads too) to the first Embed
 // call rather than server startup, unless the caller asks for it earlier
@@ -414,24 +425,38 @@ func (l *LazyImageEmbedder) Close() error { return l.lazy.close() }
 
 // LazyCompleter is a Completer that defers building the real one, a chat
 // model of a few gigabytes, to its first use. It behaves as LazyEmbedder
-// does: one load under a context only Close cancels, and a kept failure.
+// does: one load under a context only Close cancels, a kept failure, and
+// Model answered from the configuration without loading.
 type LazyCompleter struct {
-	lazy lazy[Completer]
+	model string
+	lazy  lazy[Completer]
 }
 
 // verify the interfaces are actually satisfied
 var (
-	_ Completer = (*LazyCompleter)(nil)
-	_ io.Closer = (*LazyCompleter)(nil)
+	_ Completer  = (*LazyCompleter)(nil)
+	_ Identified = (*LazyCompleter)(nil)
+	_ io.Closer  = (*LazyCompleter)(nil)
 )
 
 // NewLazyCompleter returns a LazyCompleter that calls load on first use and
-// keeps what it returns until Close. load gets a context that Close cancels
-// and should stop for it; a load that panics or returns a nil Completer
-// fails like one that returns an error.
-func NewLazyCompleter(load func(ctx context.Context) (Completer, error)) *LazyCompleter {
-	return &LazyCompleter{lazy: lazy[Completer]{what: "completer", load: load}}
+// keeps what it returns until Close. model is what Model reports, the name
+// the loaded Completer's Model will return when it has one ("" leaves the
+// model unknown and unchecked); a loaded Completer that names another model
+// fails the load and is closed. load gets a context that Close cancels and
+// should stop for it; a load that panics or returns a nil Completer fails
+// like one that returns an error.
+func NewLazyCompleter(model string, load func(ctx context.Context) (Completer, error)) *LazyCompleter {
+	return &LazyCompleter{model: model, lazy: lazy[Completer]{
+		what:  "completer",
+		load:  load,
+		check: func(c Completer) error { return checkModel(c, model) },
+	}}
 }
+
+// Model implements Identified. It returns the configured model name without
+// triggering a load, so a status page can name the model before it loads.
+func (l *LazyCompleter) Model() string { return l.model }
 
 // Complete implements Completer. It loads the model on the first call
 // (unless Load already did), waits for a load in progress while ctx lasts,

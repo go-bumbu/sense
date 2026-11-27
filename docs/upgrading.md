@@ -64,3 +64,29 @@ on the first 2 KB. With a chat context under 4096 tokens keep `MaxBytes` at or u
 window fails (twice, see "A bad answer is asked for again" in
 [Generating tags](tagging.md#generating-tags)). If you never tag long texts, set
 `CompleterSpec.ContextTokens` to 2048 to keep the smaller KV cache.
+
+## API: lazy chat model, cache stats, image decoding
+
+- `sense.NewLazyCompleter(load)` became `NewLazyCompleter(model, load)`: `Model` names the
+  chat model before it loads (yzma's `CompleterSpec.Name`), and a loaded Completer that
+  names another fails the load. Pass `""` to keep the old behaviour.
+- `tagging.EmbeddingCache` has a `Stats` method (entries and vector bytes across every
+  index). A cache of your own needs it; `cachetest` checks it.
+- The decoder `search.MediaIndex` uses is public as `media.DecodeImage`, with the image
+  formats registered in `media`. Decode with it before `phash.Hash` (or any embedder you
+  call yourself) to see a JPEG upright, as the index does.
+- An audio-only file is `media.ErrNoVideo` from `media/ffmpeg`'s `Sample` and `Duration`,
+  and `search.ErrNoFrames` from `MediaIndex.IndexVideo`, where it used to be ffmpeg's
+  own error.
+
+## Runtime downloads: sense-deps, ONNX Runtime CUDA 13
+
+- A managed `LibDir` downloads ONNX Runtime and llama.cpp from the releases of
+  [go-bumbu/sense-deps](https://github.com/go-bumbu/sense-deps), not from Microsoft's and
+  ggml-org's GitHub releases. Allow `github.com/go-bumbu/sense-deps` where downloads are
+  filtered. The llama.cpp files are the same bytes; the ONNX Runtime ones are Microsoft's
+  NuGet builds of the same release, repackaged, so a directory filled before keeps working
+  and is not downloaded again.
+- `onnx.ProviderCUDA` gets the CUDA 13 build of ONNX Runtime 1.31.1, not the CUDA 12 one:
+  the host needs CUDA 13 and cuDNN 9. A managed `LibDir` that holds the CUDA 12 build keeps
+  it; for CUDA 12 put that build in an unmanaged `LibDir`.

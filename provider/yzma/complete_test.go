@@ -15,8 +15,12 @@ import (
 	"github.com/go-bumbu/sense"
 )
 
-// the Completer must be what a tagging.Generator asks for
-var _ sense.Completer = (*Completer)(nil)
+// the Completer must be what a tagging.Generator asks for, and name its
+// model as a sense.LazyCompleter checks it
+var (
+	_ sense.Completer  = (*Completer)(nil)
+	_ sense.Identified = (*Completer)(nil)
+)
 
 // Handles and tokens the fake hands out.
 const (
@@ -279,6 +283,15 @@ func promptOf(f *fakeChat, prompt int) string {
 		}
 	}
 	return b.String()
+}
+
+// TestCompleter_NamesItsModelAndDevice: Model is the spec's name, the one a
+// sense.LazyCompleter is configured with, and Accel what the model runs on.
+func TestCompleter_NamesItsModelAndDevice(t *testing.T) {
+	c := openFakeChat(t, newFakeChat(), testSpec())
+	if c.Model() != "org/chat" || c.Accel() != "cpu" {
+		t.Errorf("Model, Accel = %q, %q; want %q, %q", c.Model(), c.Accel(), "org/chat", "cpu")
+	}
 }
 
 func TestComplete_BuildsThePromptFromTheTemplateAndTheMessages(t *testing.T) {

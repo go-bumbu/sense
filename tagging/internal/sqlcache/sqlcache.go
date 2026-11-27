@@ -364,6 +364,14 @@ func (c *Cache) Prune(ctx context.Context, unusedSince time.Time) (int64, error)
 	return res.RowsAffected()
 }
 
+// Stats implements tagging.EmbeddingCache. A vector is stored as its
+// little-endian float32s, so the length of the column is its size.
+func (c *Cache) Stats(ctx context.Context) (tagging.CacheStats, error) {
+	var st tagging.CacheStats
+	err := c.db.QueryRowContext(ctx, `SELECT COUNT(*), COALESCE(SUM(LENGTH(vec)), 0) FROM `+table).Scan(&st.Entries, &st.VectorBytes)
+	return st, err
+}
+
 // placeholders returns n comma-separated ? placeholders.
 func placeholders(n int) string {
 	return strings.TrimSuffix(strings.Repeat("?,", n), ",")

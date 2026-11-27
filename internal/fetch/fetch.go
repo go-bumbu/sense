@@ -46,6 +46,12 @@ import (
 // is written to (see partialPath).
 const partialSuffix = ".partial"
 
+// DepsURL is where the providers' pinned native libraries are downloaded
+// from: the releases of go-bumbu/sense-deps, which keeps the exact upstream
+// builds (ONNX Runtime, llama.cpp) so a release that disappears upstream does
+// not break a first use. A file's URL is DepsURL + "<release tag>/<file>".
+const DepsURL = "https://github.com/go-bumbu/sense-deps/releases/download/"
+
 // Asset is one downloadable file with its expected digest.
 type Asset struct {
 	URL string
